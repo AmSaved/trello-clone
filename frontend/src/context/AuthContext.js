@@ -13,10 +13,23 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         if (token) {
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            // You could verify token here
+            fetchUser();
+        } else {
+            setLoading(false);
         }
-        setLoading(false);
     }, [token]);
+
+    const fetchUser = async () => {
+        try {
+            const response = await axios.get('http://localhost:5000/api/auth/me');
+            setUser(response.data.user);
+        } catch (error) {
+            console.error('Error fetching user:', error);
+            logout();
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const login = async (email, password) => {
         try {
@@ -31,7 +44,10 @@ export const AuthProvider = ({ children }) => {
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             return { success: true };
         } catch (error) {
-            return { success: false, error: error.response?.data?.message || 'Login failed' };
+            return { 
+                success: false, 
+                error: error.response?.data?.message || 'Login failed' 
+            };
         }
     };
 
@@ -49,7 +65,10 @@ export const AuthProvider = ({ children }) => {
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             return { success: true };
         } catch (error) {
-            return { success: false, error: error.response?.data?.message || 'Registration failed' };
+            return { 
+                success: false, 
+                error: error.response?.data?.message || 'Registration failed' 
+            };
         }
     };
 
@@ -65,12 +84,13 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
-        isAuthenticated: !!user
+        isAuthenticated: !!user,
+        loading
     };
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 };

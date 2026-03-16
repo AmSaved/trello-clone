@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Board from './components/Board';
 import './App.css';
 
-function App() {
-  const { user, login, register, logout, isAuthenticated } = useAuth();
+function AppContent() {
+  const { user, login, register, logout, isAuthenticated, loading } = useAuth();
   const [boards, setBoards] = useState([]);
-  const [showAuth, setShowAuth] = useState('login'); // 'login' or 'register'
+  const [showAuth, setShowAuth] = useState('login');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,7 +14,11 @@ function App() {
   });
   const [error, setError] = useState('');
   const [showCreateBoard, setShowCreateBoard] = useState(false);
-  const [newBoard, setNewBoard] = useState({ title: '', backgroundColor: '#0079bf' });
+  const [newBoard, setNewBoard] = useState({ 
+    title: '', 
+    backgroundColor: '#0079bf' 
+  });
+  const [selectedBoard, setSelectedBoard] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -54,6 +58,8 @@ function App() {
 
   const handleCreateBoard = async (e) => {
     e.preventDefault();
+    if (!newBoard.title.trim()) return;
+
     try {
       const response = await fetch('http://localhost:5000/api/boards', {
         method: 'POST',
@@ -71,6 +77,10 @@ function App() {
       console.error('Error creating board:', error);
     }
   };
+
+  if (loading) {
+    return <div className="loading">Loading...</div>;
+  }
 
   if (!isAuthenticated) {
     return (
@@ -130,6 +140,21 @@ function App() {
     );
   }
 
+  if (selectedBoard) {
+    return (
+      <div className="App">
+        <header>
+          <button className="back-btn" onClick={() => setSelectedBoard(null)}>
+            ← Back to Boards
+          </button>
+          <h1>📋 {selectedBoard.title}</h1>
+          <button onClick={logout} className="logout-btn">Logout</button>
+        </header>
+        <Board board={selectedBoard} />
+      </div>
+    );
+  }
+
   return (
     <div className="App">
       <header>
@@ -174,11 +199,27 @@ function App() {
 
         <div className="boards-grid">
           {boards.map(board => (
-            <Board key={board._id} board={board} />
+            <div 
+              key={board._id} 
+              className="board-card"
+              onClick={() => setSelectedBoard(board)}
+              style={{ backgroundColor: board.backgroundColor }}
+            >
+              <h3>{board.title}</h3>
+              <p>{board.lists?.length || 0} lists</p>
+            </div>
           ))}
         </div>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
